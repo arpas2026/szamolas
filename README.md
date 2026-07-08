@@ -1,0 +1,2 @@
+# szamolas
+Matematikai műveletek
