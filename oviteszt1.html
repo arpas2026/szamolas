@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Évszakok - Interaktív Játék</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --success-color: #2ECC71;
+            --error-color: #E74C3C;
+            --bg-color: #F0F4F8;
+            --text-color: #2C3E50;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        /* Fő konténer: Mobilon teljes szélesség, asztalin korlátozott */
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* Fejléc és Kérdés */
+        header {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        .progress {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        /* Képkezelés - Reszponzív és fix magasságú konténer */
+        .image-container {
+            width: 100%;
+            height: 250px; /* Fix magasság a layout ugrálás elkerülésére */
+            margin-bottom: 20px;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 3px solid #eee;
+            background-color: #fafafa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* A kép nem torzul, beleilleszkedik */
+        }
+
+        /* Válaszlehetőségek - Grid elrendezés (2x2) */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .option-btn {
+            background-color: #fff;
+            border: 3px solid var(--primary-color);
+            border-radius: 15px;
+            padding: 15px 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            touch-action: manipulation; /* Érintés optimalizálás */
+            min-height: 80px; /* Nagy kattintási felület */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .option-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* Állapotok formázása */
+        .option-btn.correct {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+
+        .option-btn.wrong {
+            background-color: var(--error-color);
+            border-color: var(--error-color);
+            color: white;
+            opacity: 0.6;
+        }
+
+        .option-btn:disabled {
+            cursor: default;
+            transform: none;
+        }
+
+        /* Tovább gomb */
+        .next-btn {
+            margin-top: 25px;
+            background-color: var(--text-color);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: none; /* Alapból rejtett */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            animation: popIn 0.3s ease-out;
+        }
+
+        .next-btn:hover {
+            background-color: #34495e;
+        }
+
+        /* Záróképernyő */
+        .result-screen {
+            display: none;
+            text-align: center;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        
+        .restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        /* Animációk */
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Kisebb mobil eszközökre */
+        @media (max-width: 400px) {
+            h1 { font-size: 1.2rem; }
+            .image-container { height: 200px; }
+            .option-btn { font-size: 1rem; min-height: 70px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div id="quiz-view" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+            <header>
+                <div class="progress">Kérdés: <span id="current-q">1</span> / 8</div>
+                <h1 id="question-text">Kérdés helye...</h1>
+            </header>
+
+            <div class="image-container">
+                <img id="question-image" src="" alt="Illusztráció az évszakhoz">
+            </div>
+
+            <div class="options-grid" id="options-container">
+                </div>
+
+            <button id="next-btn" class="next-btn">Következő →</button>
+        </div>
+
+        <div id="result-view" class="result-screen">
+            <h1>Ügyes voltál!</h1>
+            <p style="font-size: 1.2rem; margin: 20px 0;">A játék véget ért.</p>
+            <p>Eredményed: <strong id="final-score">0</strong> / 8</p>
+            <button class="restart-btn" onclick="location.reload()">Újrakezdés</button>
+        </div>
+    </div>
+
+    <script>
+        // --- ADATSTRUKTÚRA ---
+        // Kérdések tömbje: 2 Tavasz, 2 Nyár, 2 Ősz, 2 Tél
+        const questions = [
+            // TAVASZ
+            {
+                question: "Mi bújik ki a földből tavasszal?",
+                image: "picture/kep01.jpg",
+                answers: ["Hóember", "Hóvirág", "Sárguló falevél", "Szánkó"],
+                correct: 1 // Index (0-tól indul)
+            },
+            {
+                question: "Melyik állat tér vissza költözéséből tavasszal?",
+                image: "picture/kep02.jpg",
+                answers: ["Gólya", "Jegesmedve", "Pingvin", "Mókus"],
+                correct: 0
+            },
+            // NYÁR
+            {
+                question: "Mit eszünk szívesen a forró nyári napon?",
+                image: "picture/kep03.jpg",
+                answers: ["Forró teát", "Fagyit", "Sült tököt", "Narancsot"],
+                correct: 1
+            },
+            {
+                question: "Hol hűsölünk nyáron?",
+                image: "picture/kep04.jpg",
+                answers: ["A kályha mellett", "A jégen", "A strandon", "Az iskolában"],
+                correct: 2
+            },
+            // ŐSZ
+            {
+                question: "Mit csinálnak a falevelek ősszel?",
+                image: "picture/kep05.jpg",
+                answers: ["Kihajtanak", "Zöldellnek", "Lehullanak", "Virágzanak"],
+                correct: 2
+            },
+            {
+                question: "Mire van szükségünk az őszi esőben?",
+                image: "picture/kep06.jpg",
+                answers: ["Napszemüvegre", "Esernyőre", "Fürdőruhára", "Szandálra"],
+                correct: 1
+            },
+            // TÉL
+            {
+                question: "Mit építhetünk a hóból?",
+                image: "picture/kep07.jpg",
+                answers: ["Homokvárat", "Hóembert", "Madárfészket", "Sátrat"],
+                correct: 1
+            },
+            {
+                question: "Hogyan öltözünk fel télen?",
+                image: "picture/kep08.jpg",
+                answers: ["Pólóban", "Rövidnadrágban", "Melegen, sapkában", "Mezítláb"],
+                correct: 2
+            }
+        ];
+
+        // --- ÁLLAPOTKEZELÉS ---
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        // --- DOM ELEMEK ---
+        const questionText = document.getElementById('question-text');
+        const questionImage = document.getElementById('question-image');
+        const optionsContainer = document.getElementById('options-container');
+        const nextBtn = document.getElementById('next-btn');
+        const currentQNum = document.getElementById('current-q');
+        const quizView = document.getElementById('quiz-view');
+        const resultView = document.getElementById('result-view');
+        const finalScore = document.getElementById('final-score');
+
+        // --- FÜGGVÉNYEK ---
+
+        function loadQuestion() {
+            // Adatok lekérése
+            const currentData = questions[currentQuestionIndex];
+            
+            // UI Frissítés
+            currentQNum.innerText = currentQuestionIndex + 1;
+            questionText.innerText = currentData.question;
+            questionImage.src = currentData.image;
+            
+            // Gombok törlése és újragenerálása
+            optionsContainer.innerHTML = '';
+            nextBtn.style.display = 'none'; // Tovább gomb elrejtése
+
+            // Válaszok keverése nélkül (a 4-6 éveseknek jobb a fix struktúra, de igény szerint keverhető)
+            currentData.answers.forEach((answer, index) => {
+                const btn = document.createElement('button');
+                btn.innerText = answer;
+                btn.classList.add('option-btn');
+                btn.onclick = () => selectAnswer(index, currentData.correct, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectAnswer(selectedIndex, correctIndex, btnElement) {
+            // Összes gomb letiltása, hogy ne lehessen többször tippelni
+            const allBtns = optionsContainer.querySelectorAll('.option-btn');
+            allBtns.forEach(btn => btn.disabled = true);
+
+            // Kiértékelés
+            if (selectedIndex === correctIndex) {
+                btnElement.classList.add('correct');
+                score++;
+            } else {
+                btnElement.classList.add('wrong');
+                // Opcionális: Mutassuk meg a helyeset is? (Pedagógiai döntés: Igen)
+                allBtns[correctIndex].classList.add('correct');
+            }
+
+            // Tovább gomb megjelenítése
+            nextBtn.style.display = 'block';
+        }
+
+        nextBtn.onclick = () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        };
+
+        function showResults() {
+            quizView.style.display = 'none';
+            resultView.style.display = 'flex';
+            finalScore.innerText = score;
+        }
+
+        // --- INDÍTÁS ---
+        // Hibakezelés képekhez: ha nincs kép, jelezze (fejlesztői segítség)
+        questionImage.onerror = function() {
+            this.alt = "A kép nem található (Ellenőrizd a picture/ mappát!)";
+            this.style.backgroundColor = "#ffecec";
+            this.style.padding = "20px";
+        };
+
+        loadQuestion();
+
+    </script>
+</body>
+</html>
